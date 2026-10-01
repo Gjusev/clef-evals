@@ -40,7 +40,7 @@ def load_secret(name: str) -> str:
 
 REPO = "clef-evals"
 run("git clone --depth 1 https://github.com/Gjusev/clef-evals.git")
-run(f"{sys.executable} -m pip install -q --no-input ./{REPO}")
+run(f"{sys.executable} -m pip install -q --no-input './{REPO}[dev]'")
 
 account_id = load_secret("CLEF_ACCOUNT_ID")
 api_token = load_secret("CLEF_API_TOKEN")
@@ -94,6 +94,6 @@ print(result.summary())
     dry_run_file.parent.mkdir(parents=True, exist_ok=True)
     dry_run_file.write_text(dry_run.strip() + "\n", encoding="utf-8")
     run(f"{sys.executable} {dry_run_file}")
-    run(f"{sys.executable} -m pytest {REPO}/tests -q --no-cov")
+    run(f"{sys.executable} -m pytest {REPO}/tests -q")
 
 print("done: outputs in /kaggle/working", flush=True)
