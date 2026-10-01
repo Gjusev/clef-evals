@@ -54,8 +54,10 @@ if total_vram_gb < 20:
     die(f"insufficient VRAM across {len(gpus)} GPU(s): {total_vram_gb:.1f} GB")
 
 # 2. Pinned stack from the model card, then the repo
-run(f"{sys.executable} -m pip install -q --no-input 'torch==2.11.0' "
-    "'transformers==5.10.2' 'accelerate' 'pillow' huggingface_hub")
+#    torchvision must upgrade in the SAME pip call or Kaggle's preinstalled
+#    cu128 build shadows the cu130 torch and AutoProcessor import explodes.
+run(f"{sys.executable} -m pip install -q --no-input --upgrade --upgrade-strategy eager "
+    "'torch==2.11.0' torchvision 'transformers==5.10.2' accelerate pillow huggingface_hub")
 run("git clone --depth 1 https://github.com/Gjusev/clef-evals.git")
 run(f"{sys.executable} -m pip install -q --no-input ./clef-evals")
 

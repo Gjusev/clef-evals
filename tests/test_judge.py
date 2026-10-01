@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from collections.abc import Callable
+from pathlib import Path
 
 import httpx
 import pytest
@@ -15,7 +16,10 @@ from clef_evals.config import ClefConfig
 from clef_evals.exceptions import ClefError, ConfigurationError
 from clef_evals.judge import AsyncClefJudge, ClefJudge, load_eval_set
 
-EVAL_SET = load_eval_set("tests/fixtures/eval_set.json")
+FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures"
+EVAL_SET_PATH = FIXTURE_DIR / "eval_set.json"
+
+EVAL_SET = load_eval_set(EVAL_SET_PATH)
 
 
 @pytest.fixture()
@@ -202,7 +206,7 @@ class TestConstruction:
 
 class TestLoadEvalSet:
     def test_loads_json_fixture(self) -> None:
-        items = load_eval_set("tests/fixtures/eval_set.json")
+        items = load_eval_set(EVAL_SET_PATH)
         assert len(items) == 5
         assert items[0].is_binary is False
         assert items[3].is_binary is True
