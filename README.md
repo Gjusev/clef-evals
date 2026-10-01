@@ -1,20 +1,56 @@
-# clef-evals
+<p align="center">
+  <img src="assets/logo.png" alt="clef-evals logo" width="96" />
+</p>
 
-[![CI](https://github.com/Gjusev/clef-evals/actions/workflows/test.yml/badge.svg)](https://github.com/Gjusev/clef-evals/actions/workflows/test.yml)
-[![PyPI](https://img.shields.io/pypi/v/clef-evals)](https://pypi.org/project/clef-evals/)
-[![Python](https://img.shields.io/pypi/pyversions/clef-evals)](https://pypi.org/project/clef-evals/)
-[![Coverage](https://img.shields.io/badge/coverage-93%25-brightgreen)](https://github.com/Gjusev/clef-evals/actions/workflows/test.yml)
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue)](https://www.apache.org/licenses/LICENSE-2.0.txt)
+<h1 align="center">clef-evals</h1>
 
-**Calibration-first evaluation toolkit for [Cloudflare Clef](https://developers.cloudflare.com/workers-ai/models/clef/) decision models.**
-Judge cheap, audit confidence.
+<p align="center">
+  <strong>Calibration-first evaluations for Cloudflare Clef decision models.</strong><br />
+  Judge cheap, audit confidence.
+</p>
 
-Most eval harnesses stop at accuracy. clef-evals also asks whether Clef's
-probabilities mean what they say. It computes Expected Calibration Error and
-Brier score over your own datasets, then turns both into a CI gate. A model
-that is right but overconfident fails your build before it fails your users.
+<p align="center">
+  <a href="https://github.com/Gjusev/clef-evals/actions/workflows/test.yml"><img src="https://github.com/Gjusev/clef-evals/actions/workflows/test.yml/badge.svg" alt="CI status" /></a>
+  <a href="https://pypi.org/project/clef-evals/"><img src="https://img.shields.io/pypi/v/clef-evals?logo=pypi&logoColor=white" alt="PyPI version" /></a>
+  <a href="https://pypi.org/project/clef-evals/"><img src="https://img.shields.io/pypi/pyversions/clef-evals?logo=python&logoColor=white" alt="Supported Python versions" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="Apache 2.0 license" /></a>
+  <a href="https://developers.cloudflare.com/workers-ai/models/clef/"><img src="https://img.shields.io/badge/built%20for-Cloudflare%20Workers%20AI-F38020?logo=cloudflare&logoColor=white" alt="Built for Cloudflare Workers AI" /></a>
+</p>
 
-## Install
+<p align="center">
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#watch-it-work">Video</a> ·
+  <a href="#reproduce-in-kaggle">Kaggle</a> ·
+  <a href="research/clef_calibration_walkthrough.ipynb">Walkthrough notebook</a> ·
+  <a href="#ci-regression-gate">CI gate</a>
+</p>
+
+<p align="center">
+  <img src="assets/social-preview-v2.png" alt="clef-evals: accuracy, ECE and Brier score guarded by a CI gate" width="100%" />
+</p>
+
+Most evaluation harnesses stop at accuracy. `clef-evals` also verifies whether a
+model's stated probabilities deserve to be trusted. Run typed Clef decisions
+against your dataset, measure Expected Calibration Error (ECE), Brier score,
+latency and cost, then make regressions fail CI before they reach users.
+
+## What you get
+
+| Evaluate | Understand | Enforce |
+| --- | --- | --- |
+| Choice, binary and custom decision tasks through sync or async judges. | Accuracy, ECE, binary and multiclass Brier, latency percentiles, token use and estimated input cost. | A CLI gate and reusable GitHub Action that compare a fresh run with a committed baseline. |
+
+- **Calibration, not just correctness.** A model that gets the label right but
+  is consistently overconfident is a risk to downstream automation.
+- **Operationally useful output.** Built-in timeouts, retries with jitter,
+  `Retry-After` handling and typed, log-safe errors.
+- **Reproducible by default.** A local walkthrough, public Kaggle kernels and
+  versioned reference data live in the repository.
+
+## Quick start
+
+Requires Python 3.10+ and a Cloudflare account ID/API token with Workers AI
+access. The only runtime dependency is `httpx`.
 
 ```bash
 pip install clef-evals
@@ -22,28 +58,33 @@ export CLEF_ACCOUNT_ID=your_account_id
 export CLEF_API_TOKEN=your_api_token
 ```
 
-Requires Python 3.10+. The only runtime dependency is `httpx`.
-
-## Quick start
-
 ```python
 from clef_evals import ClefJudge
 
-judge = ClefJudge()  # config from environment
+judge = ClefJudge()  # configuration is read from the environment
 
 result = judge.evaluate([
-    {"state": "Email: I need a refund", "instructions": "Which team?",
-     "criteria": {"billing": "Payments, invoices, refunds",
-                  "technical": "Bugs and outages",
-                  "sales": "Plans and upgrades"},
-     "gold": "billing"},
-    {"state": "Checkout is down for everyone", "instructions": "Is this urgent?",
-     "gold": True},  # binary items use a boolean gold
+    {
+        "state": "Email: I need a refund",
+        "instructions": "Which team?",
+        "criteria": {
+            "billing": "Payments, invoices, refunds",
+            "technical": "Bugs and outages",
+            "sales": "Plans and upgrades",
+        },
+        "gold": "billing",
+    },
+    {
+        "state": "Checkout is down for everyone",
+        "instructions": "Is this urgent?",
+        "gold": True,  # binary items use a boolean gold label
+    },
 ])
+
 print(result.summary())
 ```
 
-```
+```text
 samples=2 failures=0
 accuracy=1.0000
 ece=0.0700
@@ -53,146 +94,63 @@ input_tokens=240 output_tokens=16
 cost: $0.000058 total | $0.028800 per 1k calls
 ```
 
-Async fan-out with a bounded semaphore:
+Need throughput? `AsyncClefJudge` uses `httpx.AsyncClient` and a bounded
+semaphore:
 
 ```python
 import asyncio
 from clef_evals import AsyncClefJudge
 
-judge = AsyncClefJudge()          # httpx.AsyncClient under the hood
-result = asyncio.run(judge.evaluate(eval_set, concurrency=8))
+result = asyncio.run(AsyncClefJudge().evaluate(eval_set, concurrency=8))
 ```
 
-Single decisions with the full probability distribution:
+For one-off decisions, `judge_choice()` returns the selected option and the
+full probability distribution; `judge_binary()` returns `P(yes)`.
 
-```python
-decision = judge.judge_choice(
-    "Email: charged twice", "Which team?",
-    {"billing": "Payments, invoices, refunds", "technical": "Bugs and outages"},
-)
-print(decision.choice, decision.probabilities)   # billing {'billing': 0.93, ...}
-p_yes = judge.judge_binary("Checkout is down", "Is this urgent?")  # 0.97
-```
+## Watch it work
 
-## Architecture
+<video src="https://raw.githubusercontent.com/Gjusev/clef-evals/main/brag-output/brag.mp4" poster="https://raw.githubusercontent.com/Gjusev/clef-evals/main/brag-output/brag.jpg" controls muted playsinline width="100%">
+  <a href="brag-output/brag.mp4">Watch the 14-second clef-evals showcase video</a>
+</video>
 
-Animated version: [docs/pipeline.svg](docs/pipeline.svg) ·
-Showcase video: [brag-output/brag.mp4](brag-output/brag.mp4) (rendered by
-[brag-output/render_video.py](brag-output/render_video.py), no stock assets)
-· Walkthrough notebook: [research/clef_calibration_walkthrough.ipynb](research/clef_calibration_walkthrough.ipynb)
+<p align="center">
+  <a href="brag-output/brag.mp4"><img src="brag-output/brag.jpg" alt="Watch the 14-second clef-evals showcase video" width="720" /></a><br />
+  <sub>If your README renderer does not play inline video, select the cover image to open it.</sub>
+</p>
 
-```
-        ┌─────────────────────────────────────────────────────────┐
-        │                    your CI / your code                  │
-        └──────────┬─────────────────────────────────┬────────────┘
-                   │                                 │
-           ┌───────▼────────┐              ┌─────────▼─────────┐
-           │   ClefJudge    │              │  clef-eval CLI    │
-           │ sync + Async   │              │  run / gate       │
-           └───────┬────────┘              └─────────┬─────────┘
-                   │                                 │
-           ┌───────▼─────────────────────────────────▼─────────┐
-           │ ClefClient                                        │
-           │  retries · exponential backoff + jitter           │
-           │  timeouts · Retry-After · structured errors       │
-           └───────┬───────────────────────────────────────────┘
-                   │ HTTPS POST /accounts/{id}/ai/run/@cf/cloudflare/clef
-           ┌───────▼───────────────────────────────────────────┐
-           │ Cloudflare Workers AI (clef 27B / clef-flash 9B)  │
-           │ state + typed questions -> probabilities          │
-           └───────┬───────────────────────────────────────────┘
-                   │ per-option probabilities + usage
-           ┌───────▼───────────────────────────────────────────┐
-           │ metrics                                           │
-           │  accuracy · ECE · Brier · Brier-multiclass        │
-           │  latency p50/p95/p99 · cost per 1k calls          │
-           └───────┬───────────────────────────────────────────┘
-                   │ EvalResult JSON
-           ┌───────▼───────────────────────────────────────────┐
-           │ regression-gate GitHub Action                     │
-           │  fresh run  vs  committed baseline                │
-           └───────────────────────────────────────────────────┘
-```
+The video is rendered from [the project-owned renderer](brag-output/render_video.py)
+with PIL and ffmpeg—no stock assets. It shows the evaluation pipeline, the
+published benchmark comparison and a passing calibration gate.
 
-## CLI
+## From eval set to gate
+
+<p align="center">
+  <img src="docs/pipeline.svg" alt="Diagram: eval set and CLI feed ClefJudge and ClefClient, which call Workers AI and report metrics into a regression gate" width="100%" />
+</p>
 
 ```bash
-# evaluate a dataset (JSON array or JSONL), human summary
+# evaluate a JSON array or JSONL file with a readable summary
 clef-eval run evals/data/support_routing.jsonl
 
-# machine-readable, save artifact
+# save the full machine-readable artifact
 clef-eval run evals/data/support_routing.jsonl --json --output results/run.json
 
-# CI gate: fail the build when quality or calibration regress
+# fail CI if quality or calibration crosses a threshold
 clef-eval run evals/data/support_routing.jsonl \
-    --min-accuracy 0.90 --max-ece 0.15
+  --min-accuracy 0.90 --max-ece 0.15
 ```
 
-Exit codes: `0` gate passed · `1` gate failed · `2` config or dataset error.
+Exit codes: `0` passed, `1` quality gate failed, `2` configuration or dataset
+error. Failures after retry are reported in `result.failures`; direct library
+users should inspect them rather than treating an incomplete run as healthy.
 
-## Benchmarks
+## CI regression gate
 
-### Published reference (Cloudflare's Decision Index 0.2.1)
-
-Numbers below are **Cloudflare's published measurements** on their
-infrastructure ([model card](https://huggingface.co/Cloudflare/clef),
-[blog](https://blog.cloudflare.com/clef-decision-models/)), not measurements
-made with this toolkit. Full table committed at
-`evals/results/published_reference.json`.
-
-| Benchmark | Clef | Clef-flash | Jev | Laya |
-|---|---:|---:|---:|---:|
-| BFCL · case exact | 98.5 | **98.8** | 95.8 | 38.1 |
-| BANKING77 · macro-F1 | **94.2** | 90.9 | 79.7 | 14.3 |
-| CLINC150+OOS · macro-F1 | **97.4** | 66.8 | 89.3 | 3.2 |
-| When2Call · accuracy | 72.4 | 65.6 | **81.0** | 11.9 |
-| ForecastBench · Brier (↓) | 13.9 | **10.6** | 17.4 | 41.1 |
-| Median latency · ms | 209.3 | 38.8 | 524.1 | **5.8** |
-| p95 latency · ms | 238.6 | **122.4** | 536.0 | 222.5 |
-
-### Our runs
-
-| Dataset | Model | n | accuracy | ECE | Brier | p50 / p95 / p99 (ms) | $/1k calls |
-|---|---|---:|---:|---:|---:|---|---:|
-| support_routing | clef | *pending first live run* | | | | | |
-| support_routing | clef-flash | *pending first live run* | | | | | |
-
-Reproduce and add your numbers (needs `CLEF_ACCOUNT_ID`/`CLEF_API_TOKEN`):
-
-```bash
-make eval                                        # both models, all datasets
-python evals/run_eval.py --model @cf/cloudflare/clef-flash --concurrency 8
-make test-integration                            # pytest against the real API
-```
-
-Cost model: published price is **$0.24 per M input tokens**
-(e.g. ~120 input-token calls ≈ **$0.029 per 1k calls**). Output-token pricing
-is not published by Cloudflare; `output_tokens` is reported but not priced.
-
-### clef vs laya
-
-| | Clef (Workers AI) | Clef-flash | Laya |
-|---|---|---|---|
-| Type | 27B decision model (hosted) | 9B decision model (hosted) | decision model (open weights) |
-| Context window | 65,536 tokens | 65,536 | 32,768 |
-| Vision / images | yes | yes | no |
-| Median latency | 209.3 ms | 38.8 ms | **5.8 ms** |
-| p95 latency | 238.6 ms | **122.4 ms** | 222.5 ms |
-| Quality (BFCL / BANKING77 / CLINC150) | 98.5 / **94.2** / **97.4** | **98.8** / 90.9 / 66.8 | 38.1 / 14.3 / 3.2 |
-| Calibration (ForecastBench Brier, ↓) | 13.9 | **10.6** | 41.1 |
-| Cost | $0.24 / M input tokens (hosted) | $0.24 / M input tokens | self-hosted (your GPUs) |
-
-**Reading:** Laya wins raw latency. Clef wins quality and calibration by
-large margins, with clef-flash as the fast middle ground. For routing and
-gating workloads, miscalibrated confidence is what breaks automation. That is
-exactly what this toolkit measures on your data.
-
-## CI gate (reusable GitHub Action)
-
-Commit a baseline JSON (any `EvalResult.to_dict()` output), then gate PRs:
+Commit a baseline generated from any `EvalResult.to_dict()` output, then
+compare it with the latest artifact in a workflow:
 
 ```yaml
-- uses: jorgealizola/clef-evals/.github/actions/regression-gate@main
+- uses: Gjusev/clef-evals/.github/actions/regression-gate@main
   with:
     current: results/run.json
     baseline: results/baselines/support-routing-clef.json
@@ -202,100 +160,100 @@ Commit a baseline JSON (any `EvalResult.to_dict()` output), then gate PRs:
       latency_p95:max:50
 ```
 
-`accuracy:min` = may not drop more than tolerance; `ece:max` = may not grow.
-Pure Python at gate time: no credentials, no network.
+`accuracy:min:0.03` permits at most a 0.03 drop; `ece:max` permits no ECE
+increase; `latency_p95:max:50` permits at most 50 ms of p95 growth. The action
+is pure Python at gate time: it does not require credentials or network access.
 
-## Live benchmark automation
+## Reproduce in Kaggle
 
-`evals.yml` runs the benchmark on demand (Actions -> Evals -> Run workflow) as
-soon as repo secrets `CLEF_ACCOUNT_ID` / `CLEF_API_TOKEN` exist, uploads the
-measurement JSON as an artifact, and optionally gates it against the committed
-baseline with the regression-gate action. Without secrets the workflow exits
-cleanly and says so.
+<p>
+  <a href="https://www.kaggle.com/code/gjusev/clef-evals-benchmark"><img src="https://img.shields.io/badge/Open%20CPU%20benchmark%20in-Kaggle-20BEFF?logo=kaggle&logoColor=white" alt="Open the CPU benchmark in Kaggle" /></a>
+  <a href="https://www.kaggle.com/code/gjusev/clef-flash-hf-benchmark"><img src="https://img.shields.io/badge/Open%20GPU%20diagnostic%20in-Kaggle-20BEFF?logo=kaggle&logoColor=white" alt="Open the GPU diagnostic in Kaggle" /></a>
+</p>
 
-## Kaggle kernel
+- [**CPU benchmark notebook**](https://www.kaggle.com/code/gjusev/clef-evals-benchmark)
+  runs a live benchmark when Kaggle secrets `CLEF_ACCOUNT_ID` and
+  `CLEF_API_TOKEN` are available. Without them, it exercises the complete
+  pipeline with a mock transport and runs the test suite.
+- [**GPU / Hugging Face diagnostic**](https://www.kaggle.com/code/gjusev/clef-flash-hf-benchmark)
+  reproducibly tests the official `clef-flash` loader. It currently OOMs on a
+  Kaggle T4 because the loader does not shard across GPUs; the kernel records
+  that diagnosis and is ready for the benchmark once sharding is supported.
+- [**Local calibration walkthrough**](research/clef_calibration_walkthrough.ipynb)
+  explains ECE and Brier from first principles, includes a reliability diagram
+  and demonstrates an offline mock run—no credentials needed.
 
-Two kernels, both pushed with the verified push/status/output loop:
+To publish a refreshed CPU kernel from this repository:
 
 ```bash
-KAGGLE_API_TOKEN=... python -m kaggle kernels push -p kaggle-kernel      # CPU, dual mode
+KAGGLE_API_TOKEN=... python -m kaggle kernels push -p kaggle-kernel
 KAGGLE_API_TOKEN=... python -m kaggle kernels status gjusev/clef-evals-benchmark
 KAGGLE_API_TOKEN=... python -m kaggle kernels output gjusev/clef-evals-benchmark -p out/
 ```
 
-- `kaggle-kernel/` (CPU): with Kaggle secrets `CLEF_ACCOUNT_ID`/`CLEF_API_TOKEN`
-  it runs the live benchmark; without them it proves the pipeline with a mock
-  transport and runs the full test suite.
-- `kaggle-kernel-hf/` (GPU, experimental): loads clef-flash from the
-  [HuggingFace weights](https://huggingface.co/Cloudflare/clef-flash) through
-  the model card's `systemone()` shape. Current status: the official loader
-  OOMs on T4 (no multi-GPU sharding); the kernel exists to prove that
-  diagnosis reproducibly and will run the full local benchmark the day the
-  loader supports sharding. Needs a phone-verified Kaggle account for GPU
-  time.
+## Reference benchmarks
 
-## Error handling
+These are **Cloudflare's published Decision Index 0.2.1 measurements**, not
+results produced by this toolkit. See the [Clef model card](https://huggingface.co/Cloudflare/clef),
+[Cloudflare announcement](https://blog.cloudflare.com/clef-decision-models/)
+and the versioned [reference JSON](evals/results/published_reference.json).
 
-Every failure is a typed exception under `ClefError`:
+| Benchmark | Clef | Clef-flash | Jev | Laya |
+| --- | ---: | ---: | ---: | ---: |
+| BFCL · case exact | 98.5 | **98.8** | 95.8 | 38.1 |
+| BANKING77 · macro-F1 | **94.2** | 90.9 | 79.7 | 14.3 |
+| CLINC150+OOS · macro-F1 | **97.4** | 66.8 | 89.3 | 3.2 |
+| When2Call · accuracy | 72.4 | 65.6 | **81.0** | 11.9 |
+| ForecastBench · Brier (↓) | 13.9 | **10.6** | 17.4 | 41.1 |
+| Median latency · ms | 209.3 | 38.8 | 524.1 | **5.8** |
 
-```
-ClefError
-├── ConfigurationError      missing/invalid env (reports ALL problems at once)
-├── ClefAPIError            API refused the request
-│   ├── ClefAuthError       401/403 (not retried)
-│   ├── ClefRateLimitError  429 (retried, honors Retry-After)
-│   └── ClefServerError     5xx (retried)
-├── ClefResponseError       body does not match the Clef schema
-├── ClefTimeoutError        retried
-└── ClefNetworkError        DNS / connection (retried)
+Run your own data instead of treating those values as a promise:
+
+```bash
+make eval
+python evals/run_eval.py --model @cf/cloudflare/clef-flash --concurrency 8
+make test-integration
 ```
 
-Retries default to `max_retries=2` with exponential backoff + jitter; every
-error carries `message` and log-safe `details`. The library logs to the
-`clef_evals` logger. It never prints and never logs your token.
+Published input price is $0.24 per million tokens (about $0.029 per 1,000
+120-token calls). Cloudflare has not published output-token pricing; the
+toolkit still reports output tokens so the calculation can be completed later.
 
-## Limitations (honest section)
+## Limitations worth knowing
 
-- **Calibration metrics audit, they don't fix.** ECE/Brier tell you how much
-  to trust Clef's probabilities on *your* distribution; they don't recalibrate
-  them. Use the reported confidence accordingly (or calibrate downstream).
-- **Cost model covers input tokens only.** Cloudflare publishes $0.24/M input
-  tokens but no output-token price for Clef at the time of writing. `output_tokens`
-  is reported so you can price it the day it appears.
-- **Mixed-type datasets blend confidence semantics.** Choice items use
-  `P(chosen option)`; binary items use `max(p, 1−p)`. ECE/Brier over a mixed
-  set pool both. Prefer per-type runs when the distinction matters.
-- **Latency numbers are client-side** (includes your network RTT to Cloudflare).
-  Do not compare them 1:1 with Cloudflare's published infra-side medians.
-- **Fail-soft evaluation.** Items that error after retries are excluded from
-  metrics and counted in `result.failures`. The CLI gate fails on any
-  failure, but direct library users should check `failures` or risk silent drift.
-- **Self-hosting is out of scope for most machines.** Clef weights are
-  ~55 GB fp16; clef-flash ~19.1 GB. No GGUF/vLLM-quantized path is published.
-  Verified empirically on Kaggle T4 x2: the official loader has no multi-GPU
-  sharding, so the single-device load OOMs at 14.6 GB usable VRAM
-  (`kaggle-kernel-hf/` reproduces the diagnosis). Self-hosting wants an
-  80GB-class GPU; these benchmarks target the hosted Workers AI API.
-- **v0.x API.** Expect small breaking changes before 1.0; the v0.1 names
-  `ClefEvalResult`, `ece`, `brier_score` remain importable.
+- Metrics audit calibration; they do not recalibrate a model for you.
+- Mixed task types pool different confidence semantics. Prefer per-type runs
+  when that distinction matters.
+- Latency is measured client-side and includes your network round trip, so it
+  is not directly comparable with Cloudflare's infrastructure-side medians.
+- Clef / clef-flash self-hosting is outside the normal workflow: the published
+  weights are large and the current official loader does not support the
+  multi-GPU sharding needed for the Kaggle T4 experiment.
+- This is a v0.x API. Legacy v0.1 names remain importable, but small breaking
+  changes can happen before 1.0.
 
 ## Development
 
 ```bash
-make install    # editable install with dev extras
-make test       # pytest with coverage (>90% enforced); integration tests excluded
-make test-integration   # real-API tests: needs CLEF_ACCOUNT_ID / CLEF_API_TOKEN
-make lint       # ruff
-make build      # wheel + sdist
+make install            # editable install with development extras
+make test               # unit tests, integration tests excluded
+make test-integration   # real API tests; requires CLEF_ACCOUNT_ID / CLEF_API_TOKEN
+make lint               # ruff
+make build              # wheel + source distribution
 ```
 
-Project layout: `src/clef_evals/` (config, client, models, metrics, judge, cli) ·
-`tests/` (unit + fixtures with real API shapes) · `evals/` (datasets, runner,
-committed results) · `scripts/check_regression.py` + `.github/actions/regression-gate/`
-(CI gate) · `kaggle-kernel/` (cloud reproduction) · `research/` (calibration
-walkthrough notebook) · `docs/` + `brag-output/` (visuals, video renderer).
+Project map: `src/clef_evals/` is the library; `tests/` holds unit fixtures;
+`evals/` contains data, runner and reference results; `research/` holds the
+notebook; `kaggle-kernel/` and `kaggle-kernel-hf/` are cloud reproductions;
+`docs/` and `brag-output/` contain the diagram and video source.
+
+## Social preview
+
+[`assets/social-preview-v2.png`](assets/social-preview-v2.png) is the
+1200×630 share image created for this release. Upload it in the repository's
+**Settings → General → Social preview** to use it on GitHub link shares.
 
 ## License
 
-Apache 2.0, see [LICENSE](LICENSE). Clef models are Apache 2.0 on
+Apache 2.0. See [LICENSE](LICENSE). Clef models are Apache 2.0 on
 [Hugging Face](https://huggingface.co/Cloudflare/clef).
