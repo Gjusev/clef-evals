@@ -227,10 +227,12 @@ KAGGLE_API_TOKEN=... python -m kaggle kernels output gjusev/clef-evals-benchmark
   it runs the live benchmark; without them it proves the pipeline with a mock
   transport and runs the full test suite.
 - `kaggle-kernel-hf/` (GPU, experimental): loads clef-flash from the
-  [HuggingFace weights](https://huggingface.co/Cloudflare/clef-flash) (19.1 GB,
-  needs T4 x2 or better) and judges the dataset locally through the model
-  card's `systemone()` shape. Fails fast if the GPU is missing or VRAM is
-  short. Needs a phone-verified Kaggle account for GPU time.
+  [HuggingFace weights](https://huggingface.co/Cloudflare/clef-flash) through
+  the model card's `systemone()` shape. Current status: the official loader
+  OOMs on T4 (no multi-GPU sharding); the kernel exists to prove that
+  diagnosis reproducibly and will run the full local benchmark the day the
+  loader supports sharding. Needs a phone-verified Kaggle account for GPU
+  time.
 
 ## Error handling
 
@@ -268,10 +270,12 @@ error carries `message` and log-safe `details`. The library logs to the
 - **Fail-soft evaluation.** Items that error after retries are excluded from
   metrics and counted in `result.failures`. The CLI gate fails on any
   failure, but direct library users should check `failures` or risk silent drift.
-- **Local inference is out of scope for most machines.** Clef is a 27B model
-  with a custom joint-schema head (reference hardware: a single H200; weights
-  ~55 GB fp16). No GGUF/vLLM-quantized path is published. These benchmarks
-  target the hosted Workers AI API.
+- **Self-hosting is out of scope for most machines.** Clef weights are
+  ~55 GB fp16; clef-flash ~19.1 GB. No GGUF/vLLM-quantized path is published.
+  Verified empirically on Kaggle T4 x2: the official loader has no multi-GPU
+  sharding, so the single-device load OOMs at 14.6 GB usable VRAM
+  (`kaggle-kernel-hf/` reproduces the diagnosis). Self-hosting wants an
+  80GB-class GPU; these benchmarks target the hosted Workers AI API.
 - **v0.x API.** Expect small breaking changes before 1.0; the v0.1 names
   `ClefEvalResult`, `ece`, `brier_score` remain importable.
 
