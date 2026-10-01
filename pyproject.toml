@@ -1,19 +1,37 @@
 [project]
 name = "clef-evals"
-version = "0.1.0"
+version = "0.2.0"
 description = "Calibration-first evaluation toolkit for Cloudflare's Clef decision models. Judge cheap, audit confidence."
 readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.10"
 authors = [{ name = "Youssef Ouhaghi Ahmian" }]
 keywords = ["clef", "cloudflare", "evaluation", "calibration", "ece", "brier", "llm", "judge"]
-dependencies = ["httpx>=0.25", "numpy>=1.24"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Testing",
+]
+dependencies = ["httpx>=0.25"]
 
 [project.scripts]
 clef-eval = "clef_evals.cli:main"
 
 [project.optional-dependencies]
-dev = ["pytest>=7"]
+dev = ["pytest>=7.4", "pytest-asyncio>=0.21", "pytest-cov>=4.1", "ruff>=0.4"]
+
+[project.urls]
+Homepage = "https://github.com/Gjusev/clef-evals"
+Repository = "https://github.com/Gjusev/clef-evals"
+Issues = "https://github.com/Gjusev/clef-evals/issues"
+Changelog = "https://github.com/Gjusev/clef-evals/releases"
 
 [build-system]
 requires = ["hatchling"]
@@ -21,3 +39,23 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/clef_evals"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-m 'not integration' --cov=clef_evals --cov-report=term-missing --cov-fail-under=90"
+markers = [
+    "integration: tests that call the real Cloudflare Clef API (deselected by default)",
+]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.coverage.run]
+source = ["clef_evals"]
+branch = true
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

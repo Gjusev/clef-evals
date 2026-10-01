@@ -1,0 +1,24 @@
+{
+  "result": {
+    "model": "@cf/cloudflare/clef",
+    "answers": {
+      "decision": {
+        "type": "choice",
+        "choice": "billing",
+        "probabilities": {
+          "billing": 0.93,
+          "technical": 0.05,
+          "sales": 0.02
+        },
+        "confidence": 0.93
+      }
+    },
+    "usage": {
+      "input_tokens": 120,
+      "output_tokens": 8
+    }
+  },
+  "success": true,
+  "errors": [],
+  "messages": []
+}

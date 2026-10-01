@@ -1,0 +1,42 @@
+[
+  {
+    "state": "Email: I was charged twice for my monthly subscription and need the duplicate charge reversed.",
+    "instructions": "Which team should handle this request?",
+    "criteria": {
+      "billing": "Payments, invoices, refunds",
+      "technical": "Outages, bugs, configuration",
+      "sales": "Plans, pricing, upgrades"
+    },
+    "gold": "billing"
+  },
+  {
+    "state": "Email: The Android app has been crashing on launch since the 2.4 update this morning.",
+    "instructions": "Which team should handle this request?",
+    "criteria": {
+      "billing": "Payments, invoices, refunds",
+      "technical": "Outages, bugs, configuration",
+      "sales": "Plans, pricing, upgrades"
+    },
+    "gold": "technical"
+  },
+  {
+    "state": "Email: We are evaluating your platform for 400 seats. Can you send an enterprise quote?",
+    "instructions": "Which team should handle this request?",
+    "criteria": {
+      "billing": "Payments, invoices, refunds",
+      "technical": "Outages, bugs, configuration",
+      "sales": "Plans, pricing, upgrades"
+    },
+    "gold": "sales"
+  },
+  {
+    "state": "Checkout has been failing for every customer for the last hour.",
+    "instructions": "Is this support request urgent?",
+    "gold": true
+  },
+  {
+    "state": "Minor typo on the pricing page footer, no functional impact.",
+    "instructions": "Is this support request urgent?",
+    "gold": false
+  }
+]

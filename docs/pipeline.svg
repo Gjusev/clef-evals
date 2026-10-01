@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 640" font-family="'Helvetica Neue','SF Pro Display',sans-serif">
+  <defs>
+    <style>
+      .canvas { fill: #F7F6F3; }
+      .card { fill: #FFFFFF; stroke: #EAEAEA; stroke-width: 1; }
+      .title { fill: #2F3437; font-size: 40px; font-weight: 700; letter-spacing: -1px; }
+      .subtitle { fill: #787774; font-size: 17px; }
+      .card-title { fill: #2F3437; font-size: 21px; font-weight: 600; }
+      .card-note { fill: #787774; font-size: 14px; }
+      .mono { fill: #2F3437; font-family: 'SF Mono','JetBrains Mono',monospace; font-size: 13.5px; }
+      .mono-muted { fill: #787774; font-family: 'SF Mono','JetBrains Mono',monospace; font-size: 12.5px; }
+      .wire { stroke: #D8D6D1; stroke-width: 1.5; fill: none; }
+      .accent { fill: #D97A3D; }
+      .accent-stroke { stroke: #D97A3D; stroke-width: 2; fill: none; }
+      .tag { fill: #F6E7DB; }
+      .tag-text { fill: #A0522A; font-size: 11.5px; font-weight: 600; letter-spacing: 1.2px; }
+    </style>
+  </defs>
+
+  <rect class="canvas" width="1200" height="640"/>
+
+  <!-- header: asymmetric, left aligned -->
+  <text class="title" x="72" y="88">clef-evals</text>
+  <text class="subtitle" x="72" y="122">Judge cheap, audit confidence.</text>
+  <rect class="tag" x="72" y="142" width="118" height="24" rx="12"/>
+  <text class="tag-text" x="86" y="158">CALIBRATION</text>
+  <rect class="tag" x="198" y="142" width="86" height="24" rx="12"/>
+  <text class="tag-text" x="212" y="158">CI GATE</text>
+
+  <!-- row 1: caller cards -->
+  <g>
+    <rect class="card" x="72" y="196" width="300" height="96" rx="8"/>
+    <text class="card-title" x="96" y="230">your eval set</text>
+    <text class="mono" x="96" y="256">state + instructions</text>
+    <text class="mono" x="96" y="274">criteria + gold labels</text>
+  </g>
+  <g>
+    <rect class="card" x="420" y="196" width="300" height="96" rx="8"/>
+    <text class="card-title" x="444" y="230">ClefJudge</text>
+    <text class="mono" x="444" y="256">ClefJudge · AsyncClefJudge</text>
+    <text class="mono" x="444" y="274">judge_choice() · judge_binary()</text>
+  </g>
+  <g>
+    <rect class="card" x="768" y="196" width="360" height="96" rx="8"/>
+    <text class="card-title" x="792" y="230">clef-eval CLI</text>
+    <text class="mono" x="792" y="256">run --min-accuracy --max-ece</text>
+    <text class="mono" x="792" y="274">exit 0 pass · exit 1 gate fail</text>
+  </g>
+
+  <!-- wires from row1 to client -->
+  <path class="wire" d="M 372 244 C 420 244, 420 320, 470 320"/>
+  <path class="wire" d="M 720 244 C 768 244, 768 320, 730 320"/>
+  <!-- flowing dots on wires -->
+  <circle r="4" class="accent">
+    <animateMotion dur="2.4s" repeatCount="indefinite" path="M 372 244 C 420 244, 420 320, 470 320"/>
+  </circle>
+  <circle r="4" class="accent">
+    <animateMotion dur="2.4s" begin="1.2s" repeatCount="indefinite" path="M 720 244 C 768 244, 768 320, 730 320"/>
+  </circle>
+
+  <!-- row 2: client card -->
+  <g>
+    <rect class="card" x="290" y="320" width="620" height="104" rx="8"/>
+    <text class="card-title" x="314" y="354">ClefClient</text>
+    <text class="mono" x="314" y="380">retries · exponential backoff + jitter · Retry-After · timeouts</text>
+    <text class="mono" x="314" y="400">typed errors: ClefAuthError · ClefRateLimitError · ClefServerError</text>
+  </g>
+
+  <!-- wire client -> API -->
+  <path class="wire" d="M 600 424 L 600 468"/>
+  <circle r="4" class="accent">
+    <animateMotion dur="1.6s" repeatCount="indefinite" path="M 600 424 L 600 468"/>
+  </circle>
+
+  <!-- row 3: API card -->
+  <g>
+    <rect class="card" x="290" y="468" width="620" height="86" rx="8"/>
+    <text class="card-title" x="314" y="500">Cloudflare Workers AI</text>
+    <text class="mono" x="314" y="526">POST /ai/run/@cf/cloudflare/clef   ->   answers + probabilities + usage</text>
+  </g>
+
+  <!-- left measurement card, asymmetric column -->
+  <g>
+    <rect class="card" x="72" y="468" width="180" height="86" rx="8"/>
+    <text class="card-title" x="92" y="498">metrics</text>
+    <text class="mono-muted" x="92" y="520">accuracy · ECE</text>
+    <text class="mono-muted" x="92" y="538">Brier · p50 p95 p99</text>
+  </g>
+  <path class="wire" d="M 252 510 L 290 510"/>
+  <circle r="3.5" class="accent">
+    <animateMotion dur="1.8s" repeatCount="indefinite" path="M 252 510 L 290 510"/>
+  </circle>
+
+  <!-- right gate card with pulse -->
+  <g>
+    <rect class="card" x="938" y="468" width="190" height="86" rx="8">
+      <animate attributeName="stroke" values="#EAEAEA;#D97A3D;#EAEAEA" dur="2.8s" repeatCount="indefinite"/>
+    </rect>
+    <text class="card-title" x="958" y="498">gate</text>
+    <text class="mono-muted" x="958" y="520">current vs baseline</text>
+    <text class="mono-muted" x="958" y="538">accuracy:min · ece:max</text>
+    <circle class="accent" cx="1108" cy="488" r="5">
+      <animate attributeName="opacity" values="1;0.25;1" dur="2.8s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  <path class="wire" d="M 910 510 L 938 510"/>
+  <circle r="3.5" class="accent">
+    <animateMotion dur="1.8s" begin="0.9s" repeatCount="indefinite" path="M 910 510 L 938 510"/>
+  </circle>
+
+  <!-- footer -->
+  <text class="mono-muted" x="72" y="606">$ pip install clef-evals   ·   $ clef-eval run eval_set.jsonl --min-accuracy 0.90</text>
+</svg>

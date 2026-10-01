@@ -1,0 +1,28 @@
+{
+  "description": "Published reference numbers for Cloudflare Clef decision models vs competing decision models. Source: Cloudflare model card (huggingface.co/Cloudflare/clef, Decision Index 0.2.1) and blog.cloudflare.com/clef-decision-models. These are Cloudflare's published measurements on their infrastructure, not clef-evals measurements.",
+  "sources": [
+    "https://huggingface.co/Cloudflare/clef",
+    "https://huggingface.co/Cloudflare/clef-flash",
+    "https://blog.cloudflare.com/clef-decision-models/"
+  ],
+  "latency_ms": {
+    "median": { "clef": 209.3, "clef-flash": 38.8, "jev": 524.1, "diffusion_gemma_jev": 84.4, "kev_9b": 51.4, "laya": 5.8 },
+    "p95": { "clef": 238.6, "clef-flash": 122.4, "jev": 536.0, "diffusion_gemma_jev": 211.2, "kev_9b": 187.9, "laya": 222.5 }
+  },
+  "quality": {
+    "bfcl_case_exact": { "clef": 98.47, "clef-flash": 98.76, "jev": 95.75, "laya": 38.13 },
+    "banking77_macro_f1": { "clef": 94.20, "clef-flash": 90.93, "jev": 79.74, "laya": 14.29 },
+    "clinc150_oos_macro_f1": { "clef": 97.43, "clef-flash": 66.77, "jev": 89.27, "laya": 3.19 },
+    "when2call_accuracy": { "clef": 72.37, "clef-flash": 65.58, "jev": 80.97, "laya": 11.94 },
+    "forecastbench_brier_lower_is_better": { "clef": 13.9, "clef-flash": 10.6, "jev": 17.4, "laya": 41.1 }
+  },
+  "pricing": {
+    "clef_input_usd_per_million_tokens": 0.24,
+    "output_token_pricing": "not published by Cloudflare at time of writing"
+  },
+  "model_card": {
+    "clef": { "backbone": "Qwen3.8-27B", "context_window_tokens": 65536, "vision": true },
+    "clef-flash": { "backbone": "Qwen3.5-9B", "context_window_tokens": 65536, "vision": true },
+    "laya": { "context_window_tokens": 32768, "vision": false, "source": "blog comparison table" }
+  }
+}

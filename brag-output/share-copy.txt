@@ -1,0 +1,14 @@
+Most eval harnesses stop at accuracy.
+
+clef-evals also audits whether Clef's probabilities mean what they say. Expected
+Calibration Error, Brier score, latency percentiles and cost per 1k calls over
+your own datasets, with a CI gate that fails the build when accuracy or
+calibration regress.
+
+Cloudflare's own Decision Index puts Clef at 94.2 macro-F1 on BANKING77 where
+Laya scores 14.3, and a 13.9 ForecastBench Brier against Laya's 41.1. Fast is
+nice. Calibrated is what keeps your automation from confidently doing the
+wrong thing.
+
+pip install clef-evals
+github.com/Gjusev/clef-evals

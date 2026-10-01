@@ -1,0 +1,11 @@
+{
+  "result": null,
+  "success": false,
+  "errors": [
+    {
+      "code": 9106,
+      "message": "Unauthorized to use model"
+    }
+  ],
+  "messages": []
+}
