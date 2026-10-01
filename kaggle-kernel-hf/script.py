@@ -75,7 +75,22 @@ sys.path.insert(0, snapshot)
 import torch  # noqa: F401  (model code expects torch imported first)
 from joint_schema_model import load_release_model, systemone
 
-model, processor = load_release_model(snapshot, device="cuda")
+model, processor = None, None
+def die(msg: str) -> None:
+    print(f"FAIL: {msg}", flush=True)
+    sys.exit(1)
+
+try:
+    # First try: shard across both T4s via accelerate, if the custom loader
+    # forwards device_map to the backbone. Single-device load OOMs: 19.1 GB
+    # of weights do not fit in one T4's 14.6 GB usable VRAM.
+    model, processor = load_release_model(snapshot, device_map="auto")
+    print("loaded with device_map=auto (multi-GPU sharding works)", flush=True)
+except TypeError:
+    die("custom loader rejects device_map: sharding unsupported; clef-flash "
+        "fp16 needs an 80GB-class GPU (or the hosted API at $0.24/M input tokens)")
+except torch.OutOfMemoryError:
+    die("single-device load OOMed and device_map sharding is not available")
 
 import httpx
 from clef_evals import ClefConfig, ClefClient, ClefJudge
