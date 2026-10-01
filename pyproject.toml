@@ -1,0 +1,23 @@
+[project]
+name = "clef-evals"
+version = "0.1.0"
+description = "Calibration-first evaluation toolkit for Cloudflare's Clef decision models. Judge cheap, audit confidence."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10"
+authors = [{ name = "Youssef Ouhaghi Ahmian" }]
+keywords = ["clef", "cloudflare", "evaluation", "calibration", "ece", "brier", "llm", "judge"]
+dependencies = ["httpx>=0.25", "numpy>=1.24"]
+
+[project.scripts]
+clef-eval = "clef_evals.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/clef_evals"]
