@@ -42,6 +42,7 @@ packages = ["src/clef_evals"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 addopts = "-m 'not integration' --cov=clef_evals --cov-report=term-missing --cov-fail-under=90"
 markers = [
     "integration: tests that call the real Cloudflare Clef API (deselected by default)",

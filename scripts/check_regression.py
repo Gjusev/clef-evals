@@ -24,13 +24,19 @@ from pathlib import Path
 from typing import Any
 
 
-def dig(document: dict[str, Any], dotted_path: str) -> Any:
-    """Resolve a dotted path like 'latency.p95' inside nested dicts."""
+def dig(document: dict[str, Any] | list[Any], dotted_path: str) -> Any:
+    """Resolve a dotted path like 'runs.0.accuracy' through dicts and lists."""
     value: Any = document
     for part in dotted_path.split("."):
-        if not isinstance(value, dict) or part not in value:
+        if isinstance(value, list):
+            try:
+                value = value[int(part)]
+            except (ValueError, IndexError):
+                raise KeyError(f"path {dotted_path!r} not found (bad index {part!r})") from None
+        elif isinstance(value, dict) and part in value:
+            value = value[part]
+        else:
             raise KeyError(f"path {dotted_path!r} not found (missing {part!r})")
-        value = value[part]
     return value
 
 

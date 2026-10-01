@@ -3,6 +3,7 @@
 [![CI](https://github.com/Gjusev/clef-evals/actions/workflows/test.yml/badge.svg)](https://github.com/Gjusev/clef-evals/actions/workflows/test.yml)
 [![PyPI](https://img.shields.io/pypi/v/clef-evals)](https://pypi.org/project/clef-evals/)
 [![Python](https://img.shields.io/pypi/pyversions/clef-evals)](https://pypi.org/project/clef-evals/)
+[![Coverage](https://img.shields.io/badge/coverage-93%25-brightgreen)](https://github.com/Gjusev/clef-evals/actions/workflows/test.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
 **Calibration-first evaluation toolkit for [Cloudflare Clef](https://developers.cloudflare.com/workers-ai/models/clef/) decision models.**
@@ -203,6 +204,14 @@ Commit a baseline JSON (any `EvalResult.to_dict()` output), then gate PRs:
 
 `accuracy:min` = may not drop more than tolerance; `ece:max` = may not grow.
 Pure Python at gate time: no credentials, no network.
+
+## Live benchmark automation
+
+`evals.yml` runs the benchmark on demand (Actions -> Evals -> Run workflow) as
+soon as repo secrets `CLEF_ACCOUNT_ID` / `CLEF_API_TOKEN` exist, uploads the
+measurement JSON as an artifact, and optionally gates it against the committed
+baseline with the regression-gate action. Without secrets the workflow exits
+cleanly and says so.
 
 ## Kaggle kernel
 

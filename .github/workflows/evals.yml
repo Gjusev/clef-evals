@@ -1,0 +1,80 @@
+name: Evals
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Clef model selector"
+        type: choice
+        options: ["@cf/cloudflare/clef", "@cf/cloudflare/clef-flash"]
+        default: "@cf/cloudflare/clef-flash"
+      gate:
+        description: "Gate the run against the committed baseline"
+        type: boolean
+        default: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    env:
+      CLEF_ACCOUNT_ID: ${{ secrets.CLEF_ACCOUNT_ID }}
+      CLEF_API_TOKEN: ${{ secrets.CLEF_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+      - name: Skip when credentials are not configured
+        if: env.CLEF_ACCOUNT_ID == '' || env.CLEF_API_TOKEN == ''
+        run: |
+          echo "Set repo secrets CLEF_ACCOUNT_ID and CLEF_API_TOKEN to enable live benchmarks."
+          exit 0
+      - name: Run benchmark
+        if: env.CLEF_ACCOUNT_ID != '' && env.CLEF_API_TOKEN != ''
+        run: |
+          python evals/run_eval.py --dataset evals/data/support_routing.jsonl --model "${{ inputs.model }}"
+      - name: Collect measurement file
+        if: env.CLEF_ACCOUNT_ID != '' && env.CLEF_API_TOKEN != ''
+        run: |
+          mkdir -p evals/out
+          cp evals/results/run-*.json evals/out/current.json
+      - uses: actions/upload-artifact@v4
+        if: env.CLEF_ACCOUNT_ID != '' && env.CLEF_API_TOKEN != ''
+        with:
+          name: eval-results
+          path: evals/out/current.json
+
+  gate:
+    if: ${{ !cancelled() && inputs.gate && env.CLEF_ACCOUNT_ID != '' }}
+    needs: benchmark
+    runs-on: ubuntu-latest
+    env:
+      CLEF_ACCOUNT_ID: ${{ secrets.CLEF_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download measurement artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: eval-results
+          path: evals/out
+      - name: Look for a committed baseline
+        id: baseline
+        run: |
+          if compgen -G "evals/results/baselines/*.json" > /dev/null; then
+            echo "path=$(ls evals/results/baselines/*.json | head -1)" >> "$GITHUB_OUTPUT"
+          else
+            echo "path=" >> "$GITHUB_OUTPUT"
+            echo "No baseline committed yet; download the artifact and commit it as the first baseline."
+          fi
+      - name: Regression gate
+        if: steps.baseline.outputs.path != ''
+        uses: ./.github/actions/regression-gate
+        with:
+          current: evals/out/current.json
+          baseline: ${{ steps.baseline.outputs.path }}
+          metrics: |
+            runs.0.accuracy:min:0.03
