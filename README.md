@@ -215,14 +215,22 @@ cleanly and says so.
 
 ## Kaggle kernel
 
-Reproduce the benchmark on Kaggle's free CPU runtime (verified push/status/output loop):
+Two kernels, both pushed with the verified push/status/output loop:
 
 ```bash
-# add secrets CLEF_ACCOUNT_ID / CLEF_API_TOKEN on kaggle.com first
-KAGGLE_API_TOKEN=... python -m kaggle kernels push -p kaggle-kernel
+KAGGLE_API_TOKEN=... python -m kaggle kernels push -p kaggle-kernel      # CPU, dual mode
 KAGGLE_API_TOKEN=... python -m kaggle kernels status gjusev/clef-evals-benchmark
 KAGGLE_API_TOKEN=... python -m kaggle kernels output gjusev/clef-evals-benchmark -p out/
 ```
+
+- `kaggle-kernel/` (CPU): with Kaggle secrets `CLEF_ACCOUNT_ID`/`CLEF_API_TOKEN`
+  it runs the live benchmark; without them it proves the pipeline with a mock
+  transport and runs the full test suite.
+- `kaggle-kernel-hf/` (GPU, experimental): loads clef-flash from the
+  [HuggingFace weights](https://huggingface.co/Cloudflare/clef-flash) (19.1 GB,
+  needs T4 x2 or better) and judges the dataset locally through the model
+  card's `systemone()` shape. Fails fast if the GPU is missing or VRAM is
+  short. Needs a phone-verified Kaggle account for GPU time.
 
 ## Error handling
 
